@@ -5,3 +5,8 @@ Math.random = () => {
   prev = x - Math.floor(x);
   return prev;
 };
+
+Math.random.reset = () => {
+  prev = 2;
+  return Math;
+};
