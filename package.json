@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "text-prediction-test":"node ./TextPredictionTest.mjs"
+    "server": "node ./src/server/index.js",
+    "text-prediction-test": "node ./TextPredictionTest.mjs",
+    "market-price-prediction-test": "node ./MarketPricePredictionTest.mjs"
   },
   "keywords": [],
   "author": "",
