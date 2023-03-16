@@ -15,6 +15,10 @@ async function fetchMarketData(market = 'BTCUSDT', tickInterval = '1h') {
           date.setHours(date.getHours() - 1000);
           break;
         }
+        case '4h': {
+          date.setHours(date.getHours() - 4 * 1000);
+          break;
+        }
         case '5m': {
           date.setMinutes(date.getMinutes() - 5 * 1000);
           break;
@@ -81,10 +85,10 @@ function getNormalizedData(inputSize, percentageRatios) {
     (a, b) => a.ratio - b.ratio
   );
   const min =
-    sortedPercentageValues[Math.floor(sortedPercentageValues.length * 0.05)]
+    sortedPercentageValues[Math.floor(sortedPercentageValues.length * 0.1)]
       .ratio;
   const max =
-    sortedPercentageValues[Math.floor(sortedPercentageValues.length * 0.95)]
+    sortedPercentageValues[Math.floor(sortedPercentageValues.length * 0.9)]
       .ratio;
   return percentageRatios.map((record, id) => {
     const newValue = (record.ratio - min) / (max - min);

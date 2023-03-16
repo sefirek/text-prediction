@@ -96,6 +96,13 @@ function train(trainingData, hiddenNeurons = inputSize) {
           100
         ).toFixed(2)}%`
       );
+      if (
+        ((trainingLoopCounter + i / batchCount) / TRAINING_LOOP_MAX_COUNTER) *
+          100 >=
+        30
+      ) {
+        break;
+      }
       try {
         myNetwork.train(dataSet, trainingOptions);
       } catch (e) {
@@ -144,43 +151,37 @@ function testPredictions(testDataSet, hiddenNeurons) {
       )
     )
   );
-  createDataSet(inputSize, market, { from: 0, tickInterval: '5m' }).then(
-    (trainingData) => {
-      const testResult = trainingData.reduce(
-        (prev, { input, output, close }) => {
-          const out = net.activate(input);
-          const maxOutId = out.reduce((p, c, id) => {
-            return c > out[p] ? id : p;
-          }, 0);
-          prev.indexes.push(maxOutId);
-          if (maxOutId < 1 + 1) {
-            if (!prev.buyState) {
-              prev.investment = 10;
-              prev.balance -= prev.investment;
-              prev.btc = (prev.investment / close) * 0.998;
-              prev.buyState = true;
-              console.log('buy');
-            }
-          } else if (maxOutId >= inputSize - 1 - 1 && prev.btc !== 0) {
-            if (prev.buyState) {
-              prev.balance += prev.btc * close * 0.998;
-              prev.buyState = false;
-              console.log('sell', prev.balance);
-            }
-          }
-          net.propagate(0.15, 0, true, output);
-          return prev;
-        },
-        { balance: 100, btc: 0, indexes: [], investment: 0 }
-      );
-      testResult.balance = testResult.btc * trainingData.at(-1).close * 0.998;
-      // console.log({ testResult });
-      fs.writeFileSync(
-        'learningresult.json',
-        JSON.stringify(testResult, null, 2)
-      );
-    }
+
+  const testResult = testDataSet.reduce(
+    (prev, { input, output, close }) => {
+      const out = net.activate(input);
+      const maxOutId = out.reduce((p, c, id) => {
+        return c > out[p] ? id : p;
+      }, 0);
+      prev.indexes.push(maxOutId);
+      if (maxOutId < 1 + 1) {
+        if (!prev.buyState) {
+          prev.investment = 10;
+          prev.balance -= prev.investment;
+          prev.btc = (prev.investment / close) * 0.998;
+          prev.buyState = true;
+          console.log('buy');
+        }
+      } else if (maxOutId >= inputSize - 1 - 1 && prev.btc !== 0) {
+        if (prev.buyState) {
+          prev.balance += prev.btc * close * 0.998;
+          prev.buyState = false;
+          console.log('sell', prev.balance);
+        }
+      }
+      net.propagate(0.95, 0, true, output);
+      return prev;
+    },
+    { balance: 100, btc: 0, indexes: [], investment: 0 }
   );
+  testResult.balance = testResult.btc * testDataSet.at(-1).close * 0.998;
+  // console.log({ testResult });
+  fs.writeFileSync('learningresult.json', JSON.stringify(testResult, null, 2));
 }
 
 // console.log([0,1,2,3,4,5,6,7,8,9].slice(-5,-1))
