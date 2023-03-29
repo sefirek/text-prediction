@@ -19,6 +19,9 @@ const TRAINING_LOOP_MAX_COUNTER = 10;
 
 const dataSet = [];
 
+let networkJson = null;
+let network = null;
+
 export async function createLstmDataSet({ value, requestId }) {
   dataSet.length = 0;
   const { marketData } = value;
@@ -92,19 +95,23 @@ export function createNewLstmNetwork({
   return network;
 }
 
-export function loadLstmNetworkFromServer({
-  action,
-  requestId,
-  value = 'url',
-}) {
-  return axios.get(getHost() + '/network/' + value).then((res) => {
-    const network = Network.fromJSON(res.data);
+export function loadLstmNetworkFromJson({ action, requestId, value }) {
+  if (typeof value !== 'object') {
     postMessage({
       action,
       requestId,
-      value: { status: 'ok', network: res.data },
+      value: { status: 'error' },
     });
-    return network;
+    return;
+  }
+  networkJson = value;
+  inputSize = value.input;
+  outputSize = value.output;
+  network = Network.fromJSON(networkJson);
+  postMessage({
+    action,
+    requestId,
+    value: { status: 'ok' },
   });
 }
 
@@ -193,24 +200,26 @@ function train(trainingData, hiddenNeurons = inputSize) {
 }
 
 async function testPredictions(testDataSet, hiddenNeurons) {
-  const url =
-    getHost() +
-    '/network/network-is-' +
-    inputSize +
-    '-hn-' +
-    hiddenNeurons +
-    '-market-' +
-    market +
-    '.json';
-  const networkJson = (await axios.get(url)).data;
+  // const url =
+  //   getHost() +
+  //   '/network/network-is-' +
+  //   inputSize +
+  //   '-hn-' +
+  //   hiddenNeurons +
+  //   '-market-' +
+  //   market +
+  //   '.json';
+  // const networkJson = (await axios.get(url)).data;
   // createPerceptronDataSet(inputSize, market, {}, networkJson).then((d) =>
   //   logFunction({ d })
   // );
   // logFunction('aaa');
   // return;
-  const net = Network.fromJSON(
-    typeof networkJson === 'string' ? JSON.parse(networkJson) : networkJson
-  );
+  // const net = Network.fromJSON(
+  //   typeof networkJson === 'string' ? JSON.parse(networkJson) : networkJson
+  // );
+
+  const net = Network.fromJSON(networkJson);
 
   const testResult = testDataSet.reduce(
     (prev, { input, output, close }, id) => {

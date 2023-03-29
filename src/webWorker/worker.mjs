@@ -1,7 +1,7 @@
 import run, {
   createLstmDataSet,
   createNewLstmNetwork,
-  loadLstmNetworkFromServer,
+  loadLstmNetworkFromJson,
 } from './MarketPricePredictionTest.mjs';
 import { Actions } from '../Workers.js';
 import { setHost } from './config.mjs';
@@ -37,8 +37,8 @@ onmessage = function (event) {
         createNewLstmNetwork(event.data);
         break;
       }
-      case Actions.LOAD_LSTM_NETWORK_FROM_SERVER: {
-        loadLstmNetworkFromServer(event.data);
+      case Actions.LOAD_LSTM_NETWORK_FROM_JSON: {
+        loadLstmNetworkFromJson(event.data);
         break;
       }
       default: {

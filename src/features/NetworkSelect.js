@@ -5,11 +5,19 @@ import './networkSelect.css';
 
 setHost(window.location.origin);
 
-export default function NetworkSelect() {
+export default function NetworkSelect({ onSelect = () => {} }) {
   const [selectedItem, setSelectedItem] = useState('');
   const [networkList, setNetworkList] = useState([]);
   const onChangeItem = (event) => {
-    setSelectedItem(event.target.value);
+    const networkFileName = event.target.value;
+    setSelectedItem(networkFileName);
+    if (networkList.includes(networkFileName)) {
+      axios.get(getHost() + '/network/' + networkFileName).then((res) => {
+        if (typeof onSelect === 'function') {
+          onSelect(res.data);
+        }
+      });
+    }
   };
   useEffect(() => {
     axios.get(getHost() + '/network/list').then((res) => {

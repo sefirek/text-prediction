@@ -68,7 +68,7 @@ function Workers() {
   };
   this.getLogs = (workerId) => {
     const logs = [...(this.workers[workerId]?.actions || [])];
-    logs.length && (this.workers[workerId].actions.length = 0);
+    // logs.length && (this.workers[workerId].actions.length = 0);
     return logs;
   };
   this.sendRequest = (workerId, { action, value }) => {
@@ -89,10 +89,10 @@ function Workers() {
       value: { inputSize, hiddenNeurons, outputSize },
     });
   };
-  this.loadLstmNetworkFromServer = (workerId, fileName) => {
+  this.loadLstmNetworkFromJson = (workerId, networkJson) => {
     return this.sendRequest(workerId, {
-      action: Actions.LOAD_LSTM_NETWORK_FROM_SERVER,
-      value: fileName,
+      action: Actions.LOAD_LSTM_NETWORK_FROM_JSON,
+      value: networkJson,
     });
   };
 }
@@ -103,7 +103,7 @@ export const Actions = {
   RUN: 2,
   INITIALIZE: 3,
   CREATE_NEW_LSTM_NETWORK: 4,
-  LOAD_LSTM_NETWORK_FROM_SERVER: 5,
+  LOAD_LSTM_NETWORK_FROM_JSON: 5,
 };
 
 export default new Workers();

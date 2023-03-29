@@ -3,6 +3,7 @@ import path from 'path';
 import cors from 'cors';
 import axios from 'axios';
 import express from 'express';
+import { exec } from 'child_process';
 const app = express();
 const port = 5000;
 
@@ -15,23 +16,86 @@ app.get('/', (req, res) => {
   res.send('Hello World!');
 });
 
-app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`);
+killProcessWithPort(port).then(() => {
+  app.listen(port, () => {
+    console.log(`Example app listening on port ${port}`);
+  });
 });
 
 app.get('/marketData', (req, res) => {
   const market = req.params.market || req.query.market;
   const tickInterval = req.params.tickInterval || req.query.tickInterval;
-  const filePath = path.join(process.cwd(), 'marketsData', market + '.json');
+  const columnNames = req.params.columnNames || req.query.columnNames;
+  const filePath = path.join(
+    process.cwd(),
+    'marketsData',
+    market + '-' + tickInterval + '.json'
+  );
   if (fs.existsSync(filePath)) {
-    res.send(JSON.parse(fs.readFileSync(filePath, 'utf-8')));
+    const marketData = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+    refactorMarketData(marketData, columnNames)
+      .then(res.send.bind(res))
+      .catch((e) => res.send(e.message));
   } else {
-    fetchMarketData(market, tickInterval).then((data) => {
-      fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
-      res.send(data);
+    fetchMarketData(market, tickInterval).then((marketData) => {
+      fs.writeFileSync(filePath, JSON.stringify(marketData, null, 2));
+      refactorMarketData(marketData, columnNames)
+        .then(res.send.bind(res))
+        .catch((e) => res.send(e.message));
     });
   }
 });
+
+function killProcessWithPort(port) {
+  return new Promise((resolve) => {
+    exec(`fuser -k ${port}/tcp`, resolve);
+  });
+}
+
+const marketColumns = [
+  'openTime',
+  'open',
+  'high',
+  'low',
+  'close',
+  'volume',
+  'closeTime',
+  'quoteAssetVolume',
+  'numOfTrades',
+  'takerBuyBaseAssetVolume',
+  'takerBuyQuoteAssetVolume',
+];
+
+async function refactorMarketData(marketData, columnNames) {
+  if (!columnNames)
+    return marketData.map((array) => array.map(Number.parseFloat));
+  const columns = columnNames.split(',');
+  const testColumnNamesErrors = columns.reduce((state, curr) => {
+    if (!marketColumns.includes(curr)) {
+      state.push(curr);
+    }
+    return state;
+  }, []);
+  if (testColumnNamesErrors.length) {
+    throw new Error(
+      'Invalid columns: ' +
+        testColumnNamesErrors.join(', ') +
+        '</br>' +
+        'Available columns: ' +
+        marketColumns.join(', ')
+    );
+  }
+  const indexes = columns.reduce((state, curr) => {
+    state.push(marketColumns.indexOf(curr));
+    return state;
+  }, []);
+  return marketData.map((data) => {
+    return indexes.reduce((state, curr) => {
+      state.push(Number.parseFloat(data[curr]));
+      return state;
+    }, []);
+  });
+}
 
 app.get('/network/list', (req, res) => {
   fs.readdir(path.join(process.cwd(), 'networks'), (err, files) => {
@@ -58,59 +122,93 @@ async function isMarketExists(market = 'BTCUSDT') {
 }
 
 async function fetchMarketData(market = 'BTCUSDT', tickInterval = '1h') {
-  let date = new Date();
-
-  const times = new Array(50)
-    .fill(0)
-    .map((value, id) => {
-      let endTime = date.getTime();
-      switch (tickInterval) {
-        case '1h': {
-          date.setHours(date.getHours() - 1000);
-          break;
-        }
-        case '5m': {
-          date.setMinutes(date.getMinutes() - 5 * 1000);
-          break;
-        }
-        case '1d': {
-          date.setDate(date.getDate() - 1000);
-          break;
-        }
-        case '1w': {
-          date.setDate(date.getDate() - 7 * 1000);
-          break;
-        }
-        default:
-          break;
+  const times = [];
+  let endTime = await findOldestTimeOfMarketData(market);
+  let startTime = endTime;
+  const now = Date.now();
+  do {
+    startTime = endTime;
+    const date = new Date(startTime);
+    switch (tickInterval) {
+      case '1h': {
+        date.setHours(date.getHours() + 1000);
+        break;
       }
+      case '5m': {
+        date.setMinutes(date.getMinutes() + 5 * 1000);
+        break;
+      }
+      case '1d': {
+        date.setDate(date.getDate() + 1000);
+        break;
+      }
+      case '1w': {
+        date.setDate(date.getDate() + 7 * 1000);
+        break;
+      }
+      default:
+        break;
+    }
+    endTime = date.getTime();
+    times.push({ startTime, endTime });
+  } while (startTime < now && endTime < now);
+  console.log('times', times.length, 'last date', times.at(-1).endTime);
+  const promises = times.map(async ({ startTime, endTime }) => {
+    if (startTime < 0 || endTime < 0) return Promise.resolve([]);
+    const rawData = await fetchPartOfMarketData({
+      startTime,
+      endTime,
+      tickInterval,
+      market,
+    });
+    return rawData.map((record) => record.map(Number.parseFloat));
+  });
+  const responses = await Promise.all(promises);
+  const response = responses.flat();
+  return response;
+}
 
-      let startTime = date.getTime();
-      return { startTime, endTime };
-    })
-    .reverse();
-  const promises = times.map(({ startTime, endTime }) => {
-    return new Promise(async (res, rej) => {
-      const url =
-        'https://api.binance.com/api/v3/klines?symbol=' +
-        market +
-        '&interval=' +
-        tickInterval +
-        '&startTime=' +
-        startTime +
-        '&endTime=' +
-        endTime +
-        '&limit=' +
-        1000;
+async function findOldestTimeOfMarketData(market) {
+  const tickInterval = '1w';
+  const date = new Date();
+  let endTime = date.getTime();
+  date.setDate(date.getDate() - 7 * 1000);
+  let startTime = date.getTime();
+  const promises = [];
+  promises.push(
+    fetchPartOfMarketData({ startTime, endTime, market, tickInterval })
+  );
+  endTime = startTime;
+  date.setDate(date.getDate() - 7 * 1000);
+  startTime = date.getTime();
+  promises.push(
+    fetchPartOfMarketData({ startTime, endTime, market, tickInterval })
+  );
+  const marketData = (await Promise.all(promises.reverse())).flat();
+  const [firstTime] = marketData.at(0);
+  return firstTime;
+}
+
+function fetchPartOfMarketData({ startTime, endTime, market, tickInterval }) {
+  return new Promise(async (res, rej) => {
+    const url =
+      'https://api.binance.com/api/v3/klines?symbol=' +
+      market +
+      '&interval=' +
+      tickInterval +
+      '&startTime=' +
+      startTime +
+      '&endTime=' +
+      endTime +
+      '&limit=' +
+      1000;
+    setTimeout(async () => {
       try {
         const response = await axios.get(url);
         res(response.data);
       } catch (e) {
         rej(e);
       }
-    });
+    }, 10);
   });
-  const responses = await Promise.all(promises);
-  const response = responses.flat();
-  return response;
 }

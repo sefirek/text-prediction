@@ -3,19 +3,24 @@ import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { loadMarketData, selectors } from '../reducers/marketSlice.js';
 import { getHost } from '../webWorker/config.mjs';
+import Intervals from './Intervals.js';
 import './market.css';
-import MarketDataList from './MarketDataList.js';
+// import MarketDataList from './MarketDataList.js';
+import SelectInterval from './SelectInterval.js';
 
 export default function Market() {
   const [marketName, setMarketName] = useState('');
+  const [marketTickInterval, setMarketTickInterval] = useState(Intervals[0]);
   const [bgColor, setBgColor] = useState('white');
   const marketDataSelector = useSelector(selectors.marketDataSelector);
 
   const dispatch = useDispatch();
 
-  const checkMarket = () => {
+  const checkMarket = (market) => {
     axios
-      .get(getHost() + '/isMarketExists', { params: { market: marketName } })
+      .get(getHost() + '/isMarketExists', {
+        params: { market: market || marketName },
+      })
       .then((res) => {
         if (res.data) {
           return setBgColor('green');
@@ -27,10 +32,12 @@ export default function Market() {
     if (
       !marketDataSelector.find(
         ({ market, tickInterval }) =>
-          market === marketName && tickInterval === '1h'
+          market === marketName && tickInterval === marketTickInterval
       )
     ) {
-      dispatch(loadMarketData({ market: marketName, tickInterval: '1h' }));
+      dispatch(
+        loadMarketData({ market: marketName, tickInterval: marketTickInterval })
+      );
     }
   };
   return (
@@ -55,6 +62,9 @@ export default function Market() {
             event.target.setSelectionRange(evSelectionStart, evSelectionStart);
           }, 1);
           setBgColor('white');
+          if (capitalizedValue.length >= 6) {
+            checkMarket(capitalizedValue);
+          }
         }}
         onKeyDown={(key) => {
           console.log({ key });
@@ -65,10 +75,13 @@ export default function Market() {
         value={marketName}
         style={{ backgroundColor: bgColor }}
       />
+      <SelectInterval onChangeInterval={setMarketTickInterval}></SelectInterval>
       <button onClick={onClickLoadMarketData} disabled={!(bgColor === 'green')}>
         Pobierz dane
       </button>
-      <MarketDataList></MarketDataList>
+      {/* <MarketDataList selectMarket={({market, tickInterval})=>{
+
+      }}></MarketDataList> */}
     </div>
   );
 }
