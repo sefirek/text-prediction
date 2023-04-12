@@ -9,36 +9,41 @@ export default function Chart({ data }) {
   const [minRange, setMinRange] = useState(0);
   const [maxRange, setMaxRange] = useState(0);
   const [disabledRange, setDisabledRange] = useState(true);
-  let rangeInput = null;
-  let chartData = [];
+
+  const getRefChartData = () => rangeRef?.current.data || [];
 
   const getTimeBoundaries = () => {
-    return [
-      roundToStep(chartData.at(0)[0].getTime()),
-      roundToStep(chartData.at(-1)[0].getTime()),
-    ];
+    return [getFirstTime(), getLastTime()];
   };
+
+  const getFirstTime = () => {
+    console.log('range ref current data');
+    console.log(rangeRef.current.data);
+    return roundToStep(rangeRef.current.data.at(0)[0]);
+  };
+  const getLastTime = () => roundToStep(rangeRef.current.data.at(-1)[0]);
 
   const updateChart = () => {
     const dateWindow = graph.getOption('dateWindow');
     const newMinTime = roundToStep(dateWindow[0]);
     const newMaxTime = roundToStep(dateWindow[1]);
 
-    const leftX = Number.parseInt(rangeInput.value, 10);
+    const leftX = rangeRef.current.valueAsNumber;
     const rightX = leftX + (newMaxTime - newMinTime);
     graph.updateOptions({
       dateWindow: [leftX, rightX],
     });
 
-    localStorage.setItem('minDateWindow', leftX);
-    localStorage.setItem('maxDateWindow', rightX);
-    localStorage.setItem(
-      'moveToLatest',
-      rangeInput.value === rangeInput.max ? '1' : ''
-    );
+    // localStorage.setItem('minDateWindow', leftX);
+    // localStorage.setItem('maxDateWindow', rightX);
+    // localStorage.setItem(
+    //   'moveToLatest',
+    //   rangeRef.current.value === rangeRef.current.max ? '1' : ''
+    // );
   };
   const updateZoom = (minTime, maxTime) => {
-    if (chartData.length === 0) {
+    const refChartData = getRefChartData();
+    if (refChartData.length === 0) {
       return;
     }
 
@@ -48,32 +53,30 @@ export default function Chart({ data }) {
       dateWindow: [newMinTime, newMaxTime],
     });
 
-    setMinRange(newMinTime);
-    setMaxRange(newMaxTime);
+    const currentMaxTime = getLastTime() - (newMaxTime - newMinTime);
+    setMaxRange(currentMaxTime);
 
-    // if (lastLoadedDataLength > 0) {
-    //   rangeInput.max = symbolMaxTime - (newMaxTime - newMinTime);
-    //   rangeInput.disabled = rangeInput.min === rangeInput.max;
-    //   rangeInput.value = newMinTime;
-    // } else {
-    //   rangeInput.disabled = true;
-    // }
+    console.log({ minRange, currentMaxTime }, minRange === currentMaxTime);
+    setDisabledRange(minRange === currentMaxTime);
+    rangeRef.current.value = newMinTime;
 
     // localStorage.setItem('minDateWindow', newMinTime);
     // localStorage.setItem('maxDateWindow', newMaxTime);
-    // localStorage.setItem('showAllData', rangeInput.disabled ? '1' : '');
+    // localStorage.setItem('showAllData', rangeRef.current.disabled ? '1' : '');
     // localStorage.setItem(
     //   'moveToLatest',
-    //   rangeInput.value === rangeInput.max || rangeInput.disabled ? '1' : ''
+    //   rangeRef.current.value === rangeRef.current.max || rangeRef.current.disabled ? '1' : ''
     // );
   };
   const roundToStep = (value) => value - (value % RANGE_STEP);
 
   useEffect(() => {
-    chartData = data.map(([time, , , , close]) => [
+    const chartData = data.map(([time, , , , close]) => [
       new Date(time),
       Number.parseFloat(close),
     ]);
+    rangeRef.current.data = chartData;
+    console.log('length:', chartData.length);
     console.log('update data', chartData);
     if (!graph) {
       graph = new Dygraph(
@@ -106,13 +109,10 @@ export default function Chart({ data }) {
   }, [data]);
 
   useEffect(() => {
-    if (!rangeInput && rangeRef.current) {
-      rangeInput = rangeRef.current;
-    }
-  });
+    console.log('min / max');
 
-  useEffect(() => {
-    if (chartData.length === 0) {
+    const refChartData = getRefChartData();
+    if (refChartData.length === 0) {
       return;
     }
 
@@ -121,11 +121,11 @@ export default function Chart({ data }) {
       graph.updateOptions({ dateWindow: [minRange, maxRange] });
     }
 
-    const firstTime = chartData.at(0)[0].getTime();
-    const lastTime = chartData.at(-1)[0].getTime();
+    const [firstTime, lastTime] = getTimeBoundaries();
     const diffTime = lastTime - firstTime;
     const diffRange = maxRange - minRange;
-    setDisabledRange(diffTime === diffRange);
+    const shouldBeDisabled = diffTime === diffRange;
+    setDisabledRange(shouldBeDisabled);
   }, [minRange, maxRange]);
 
   return (

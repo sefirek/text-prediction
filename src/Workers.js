@@ -3,6 +3,15 @@ function Workers() {
    * @type {{id:Number,action:[{action:0}],worker:Worker}}
    */
   this.workers = [];
+
+  this.getNextId = () => {
+    return (
+      this.workers.reduce((max, worker) => {
+        return Math.max(max, worker.id);
+      }, -1) + 1
+    );
+  };
+
   this.createWorker = (workerId) => {
     if (this.workers[workerId]) return false;
     const worker = new Worker('worker.bundle.js');

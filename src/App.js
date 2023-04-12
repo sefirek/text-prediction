@@ -9,6 +9,8 @@ import Market from './features/Market';
 import MarketDataList from './features/MarketDataList';
 import { selectors } from './reducers/marketSlice';
 import Chart from './features/Chart';
+import WorkerPanel from './features/WorkerPanel';
+import './close-jsx-a11y-error';
 
 function App() {
   const marketDataSelector = useSelector(selectors.marketDataSelector);
@@ -125,8 +127,20 @@ function App() {
           }}
         ></MarketDataList>
         <NetworkSelect onSelect={setNetworkJson}></NetworkSelect>
-        <NetworkSize></NetworkSize>
-        <button onClick={createWorker}>nowy worker</button>
+        {/* <NetworkSize></NetworkSize> */}
+        {/* <button onClick={createWorker}>nowy worker</button> */}
+        <button
+          onClick={() => {
+            const newId = Workers.getNextId();
+            Workers.createWorker(newId);
+            Workers.initializeWorker(newId);
+          }}
+        >
+          Dodaj worker
+        </button>
+        {Workers.workers.map(({ id }) => (
+          <WorkerPanel key={id} id={id}></WorkerPanel>
+        ))}
         <button onClick={testWorker} hidden={!networkJson}>
           test worker
         </button>

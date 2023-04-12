@@ -4,7 +4,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import { loadMarketData, selectors } from '../reducers/marketSlice.js';
 import { getHost } from '../webWorker/config.mjs';
 import Intervals from './Intervals.js';
-import './market.css';
 // import MarketDataList from './MarketDataList.js';
 import SelectInterval from './SelectInterval.js';
 
@@ -42,7 +41,9 @@ export default function Market() {
   };
   return (
     <div>
-      <label htmlFor='market-name'>Podaj nazwę pary i zatwierdź:</label>
+      <label htmlFor='market-name' style={{ marginRight: '1rem' }}>
+        Podaj nazwę pary:
+      </label>
       <input
         id='market-name'
         name='market-name'
@@ -73,12 +74,26 @@ export default function Market() {
           }
         }}
         value={marketName}
-        style={{ backgroundColor: bgColor }}
+        style={{
+          backgroundColor: bgColor,
+          width: '5rem',
+          marginRight: '0.3rem',
+        }}
       />
-      <SelectInterval onChangeInterval={setMarketTickInterval}></SelectInterval>
-      <button onClick={onClickLoadMarketData} disabled={!(bgColor === 'green')}>
-        Pobierz dane
-      </button>
+      {bgColor === 'green' ? (
+        <>
+          <SelectInterval
+            onChangeInterval={setMarketTickInterval}
+          ></SelectInterval>
+          <button
+            onClick={onClickLoadMarketData}
+            style={{ marginLeft: '0.3rem' }}
+          >
+            Pobierz dane
+          </button>
+        </>
+      ) : null}
+
       {/* <MarketDataList selectMarket={({market, tickInterval})=>{
 
       }}></MarketDataList> */}
