@@ -2,9 +2,8 @@ import logo from './logo.svg';
 import './App.css';
 import { useSelector } from 'react-redux';
 import { useEffect, useState, useRef } from 'react';
-import Workers from './Workers';
+import Workers, { getActionName } from './Workers';
 import NetworkSelect from './features/NetworkSelect';
-import NetworkSize from './features/NetworkSize';
 import Market from './features/Market';
 import MarketDataList from './features/MarketDataList';
 import { selectors } from './reducers/marketSlice';
@@ -35,7 +34,7 @@ function App() {
 
       // actions.length = 0;
     }, 100);
-    console.log('xxxxxxxxxxxxxxxxxxxx');
+    // console.log('xxxxxxxxxxxxxxxxxxxx');
   });
   const createWorker = () => {
     console.log(Workers.createWorker(0));
@@ -55,7 +54,7 @@ function App() {
         console.log('createLstmDataSet', data);
         Workers.createNewLstmNetwork(0, {
           inputSize: 11,
-          hiddenNeurons: 31,
+          hiddenLayerSize: 31,
           outputSize: 11,
         }).then(() => {
           console.log('run');
@@ -148,7 +147,7 @@ function App() {
       <div className='worker-log-container' ref={workerLogContainerRef}>
         {log.map((worker, id) => (
           <div key={id}>
-            {worker.action} {JSON.stringify(worker.value)}
+            {getActionName(worker.action)} {JSON.stringify(worker.value)}
           </div>
         ))}
       </div>

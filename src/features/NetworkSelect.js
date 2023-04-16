@@ -36,7 +36,7 @@ export default function NetworkSelect({ disabled, onSelect = () => {} }) {
         <option value=''></option>
         {networkList.map((fileName, id) => (
           <option key={id} value={fileName}>
-            <button>{fileName}</button>
+            {fileName}
           </option>
         ))}
       </datalist>

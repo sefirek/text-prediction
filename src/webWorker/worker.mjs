@@ -2,8 +2,10 @@ import run, {
   createLstmDataSet,
   createNewLstmNetwork,
   loadLstmNetworkFromJson,
+  setHiddenLayerSize,
+  setInputLayerSize,
 } from './MarketPricePredictionTest.mjs';
-import { Actions } from '../Workers.js';
+import { Actions, Statuses } from '../Workers.js';
 import { setHost } from './config.mjs';
 const logFunction = (...args) =>
   postMessage({ action: Actions.LOG, value: args });
@@ -19,7 +21,7 @@ onmessage = function (event) {
         setHost(value.host);
         postMessage({
           action,
-          value: { status: 'ok' },
+          value: { status: Statuses.OK },
           requestId,
         });
         break;
@@ -41,8 +43,16 @@ onmessage = function (event) {
         loadLstmNetworkFromJson(event.data);
         break;
       }
+      case Actions.SET_INPUT_LAYER_SIZE: {
+        setInputLayerSize(event.data);
+        break;
+      }
+      case Actions.SET_HIDDEN_LAYER_SIZE: {
+        setHiddenLayerSize(event.data);
+        break;
+      }
       default: {
-        logFunction('Unkown action');
+        logFunction('Unknown action');
       }
     }
     // postMessage('aaa');
