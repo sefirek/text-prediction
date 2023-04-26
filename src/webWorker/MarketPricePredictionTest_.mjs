@@ -136,7 +136,7 @@ function train(trainingData, hiddenNeurons = inputSize) {
 
 async function testPredictions(testDataSet, hiddenNeurons) {
   const url =
-    'http://localhost:5000/networks/network-is-' +
+    'http://localhost:5000/network/network-is-' +
     inputSize +
     '-hn-' +
     hiddenNeurons +

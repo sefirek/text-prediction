@@ -7,11 +7,7 @@ export default async function fetchMarketData(
 ) {
   const response = (
     await axios.get(
-      getHost() +
-        '/marketData?market=' +
-        market +
-        '&tickInterval=' +
-        tickInterval
+      `${getHost()}/marketData?market=${market}&tickInterval=${tickInterval}`
     )
   ).data;
   return response;

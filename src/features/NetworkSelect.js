@@ -5,7 +5,7 @@ import './networkSelect.css';
 
 setHost(window.location.origin);
 
-export default function NetworkSelect({ onSelect = () => {} }) {
+export default function NetworkSelect({ disabled, onSelect = () => {} }) {
   const [selectedItem, setSelectedItem] = useState('');
   const [networkList, setNetworkList] = useState([]);
   const onChangeItem = (event) => {
@@ -14,6 +14,9 @@ export default function NetworkSelect({ onSelect = () => {} }) {
     if (networkList.includes(networkFileName)) {
       axios.get(getHost() + '/network/' + networkFileName).then((res) => {
         if (typeof onSelect === 'function') {
+          res.data.hidden = Number.parseFloat(
+            networkFileName.split('hn-')[1].split('-market')[0]
+          );
           onSelect(res.data);
         }
       });
@@ -24,13 +27,16 @@ export default function NetworkSelect({ onSelect = () => {} }) {
       setNetworkList(res.data);
     });
   }, []);
+  useEffect(() => {
+    if (disabled) setSelectedItem('');
+  }, [disabled]);
   return (
     <div className='select-editable'>
       <datalist onChange={onChangeItem} id='network-list'>
         <option value=''></option>
         {networkList.map((fileName, id) => (
           <option key={id} value={fileName}>
-            {fileName}
+            <button>{fileName}</button>
           </option>
         ))}
       </datalist>
@@ -39,7 +45,8 @@ export default function NetworkSelect({ onSelect = () => {} }) {
         name='format'
         value={selectedItem}
         onChange={onChangeItem}
-        list='network-list'
+        list={disabled ? '' : 'network-list'}
+        disabled={disabled}
       />
     </div>
   );
