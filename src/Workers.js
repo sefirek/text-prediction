@@ -26,10 +26,10 @@ function Workers() {
     };
     this.workers[workerId] = workerState;
     worker.onmessage = ({ data }) => {
-      const { requestId, value } = data;
+      const { action, requestId, value } = data;
       const { callbacks } = workerState;
       if (callbacks[requestId]) {
-        if (value.status === 'ok') {
+        if (value.status === Statuses.OK) {
           callbacks[requestId].resolve(data);
         } else {
           callbacks[requestId].reject(data);
@@ -38,7 +38,13 @@ function Workers() {
         delete callbacks[requestId];
         return;
       }
-      workerState.actions.push(data);
+      switch (action) {
+        case Actions.LOG: {
+        }
+        default: {
+          workerState.actions.push(data);
+        }
+      }
     };
     this.initializeWorker(workerId)
       .then((data) => console.log('worker', workerId, 'initialized'))
@@ -65,7 +71,7 @@ function Workers() {
     }
     return Promise.resolve({
       action: Actions.INITIALIZE,
-      value: { status: 'ok' },
+      value: { status: Statuses.OK },
     });
   };
   this.createLstmDataSet = (workerId, { inputSize, marketData } = {}) => {
@@ -91,17 +97,29 @@ function Workers() {
   this.createNewLstmNetwork = (
     workerId,
 
-    { inputSize = 11, hiddenNeurons = 11, outputSize = 11 }
+    { inputSize = 11, hiddenLayerSize = 11, outputSize = 11 }
   ) => {
     return this.sendRequest(workerId, {
       action: Actions.CREATE_NEW_LSTM_NETWORK,
-      value: { inputSize, hiddenNeurons, outputSize },
+      value: { inputSize, hiddenLayerSize, outputSize },
     });
   };
   this.loadLstmNetworkFromJson = (workerId, networkJson) => {
     return this.sendRequest(workerId, {
       action: Actions.LOAD_LSTM_NETWORK_FROM_JSON,
       value: networkJson,
+    });
+  };
+  this.setInputSize = (workerId, inputSize) => {
+    return this.sendRequest(workerId, {
+      action: Actions.SET_INPUT_LAYER_SIZE,
+      value: inputSize,
+    });
+  };
+  this.setHiddenSize = (workerId, hiddenSize) => {
+    return this.sendRequest(workerId, {
+      action: Actions.SET_HIDDEN_LAYER_SIZE,
+      value: hiddenSize,
     });
   };
 }
@@ -113,6 +131,17 @@ export const Actions = {
   INITIALIZE: 3,
   CREATE_NEW_LSTM_NETWORK: 4,
   LOAD_LSTM_NETWORK_FROM_JSON: 5,
+  SET_INPUT_LAYER_SIZE: 6,
+  SET_HIDDEN_LAYER_SIZE: 7,
+};
+
+export function getActionName(actionId) {
+  return Object.keys(Actions).find((key) => Actions[key] === actionId);
+}
+
+export const Statuses = {
+  ERROR: 'error',
+  OK: 'ok',
 };
 
 export default new Workers();

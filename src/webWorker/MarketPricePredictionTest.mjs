@@ -4,13 +4,14 @@ import Neataptic from './neataptic.js';
 import createDataSet from './getDataSet.mjs';
 
 import './init.mjs';
-import { Actions } from '../Workers.js';
+import { Actions, Statuses } from '../Workers.js';
 import { getHost } from './config.mjs';
 const { architect, methods, Network } = Neataptic;
 
 console.log = globalThis.logFunction;
 
 let inputSize = 31;
+let hiddenLayerSize = 15;
 let outputSize = inputSize;
 
 const market = 'FETBNB';
@@ -25,20 +26,18 @@ let network = null;
 export async function createLstmDataSet({ value, requestId }) {
   dataSet.length = 0;
   const { marketData } = value;
-  inputSize = value.inputSize;
-  outputSize = inputSize;
   try {
     const data = await createDataSet(inputSize, marketData);
     dataSet.push(...data);
     postMessage({
       action: Actions.CREATE_LSTM_DATA_SET,
-      value: { status: 'ok', dataSetLength: dataSet.length },
+      value: { status: Statuses.OK, dataSetLength: dataSet.length },
       requestId,
     });
   } catch (e) {
     postMessage({
       action: Actions.CREATE_LSTM_DATA_SET,
-      value: { status: 'error', error: e },
+      value: { status: Statuses.ERROR, error: e },
       requestId,
     });
   }
@@ -76,21 +75,20 @@ export default function run({ action, requestId }) {
   //   ),
   //   15
   // );
-  postMessage({ action, requestId, value: { status: 'ok' } });
+  postMessage({ action, requestId, value: { status: Statuses.OK } });
   testPredictions(dataSet, 15);
 }
 
-export function createNewLstmNetwork({
-  action,
-  requestId,
-  value = { inputSize: 11, hiddenNeurons: 11, outputSize: 11 },
-}) {
-  const { inputSize, hiddenNeurons, outputSize } = value;
-  const network = new architect.LSTM(inputSize, hiddenNeurons, outputSize);
+export function createNewLstmNetwork({ action, requestId, value }) {
+  const network = new architect.LSTM(
+    value?.inputSize || inputSize,
+    value?.hiddenLayerSize || hiddenLayerSize,
+    value?.outputSize || outputSize
+  );
   postMessage({
     action,
     requestId,
-    value: { status: 'ok', network: network.toJSON() },
+    value: { status: Statuses.OK, network: network.toJSON() },
   });
   return network;
 }
@@ -100,7 +98,7 @@ export function loadLstmNetworkFromJson({ action, requestId, value }) {
     postMessage({
       action,
       requestId,
-      value: { status: 'error' },
+      value: { status: Statuses.ERROR },
     });
     return;
   }
@@ -111,13 +109,13 @@ export function loadLstmNetworkFromJson({ action, requestId, value }) {
   postMessage({
     action,
     requestId,
-    value: { status: 'ok' },
+    value: { status: Statuses.OK },
   });
 }
 
-function train(trainingData, hiddenNeurons = inputSize) {
+function train(trainingData) {
   Math.random.reset();
-  logFunction('Number of hidden neurons', hiddenNeurons);
+  logFunction('Number of hidden neurons', hiddenLayerSize);
   const myNetwork = createNewLstmNetwork();
   let batchCount = TRAINING_LOOP_MAX_COUNTER / 2 + 1;
   for (
@@ -143,19 +141,6 @@ function train(trainingData, hiddenNeurons = inputSize) {
       },
     };
 
-    // fs.writeFileSync(
-    //   process.cwd() +
-    //     '/networks/network' +
-    //     '-is-' +
-    //     inputSize +
-    //     '-hn-' +
-    //     hiddenNeurons +
-    //     '-market-' +
-    //     market +
-    //     '.json',
-    //   JSON.stringify(myNetwork.toJSON(), null, 2)
-    // );
-
     for (let i = 0; i < batchCount; i += 1) {
       const batchId = i;
       const from = Math.floor((batchId * trainingData.length) / batchCount);
@@ -179,46 +164,19 @@ function train(trainingData, hiddenNeurons = inputSize) {
 
     if (trainingOptions.kill) {
       logFunction('Dlugie uczenie, kill');
-      testPredictions(trainingData, hiddenNeurons);
-      setTimeout(() => train(trainingData, hiddenNeurons + 1), 100);
+      testPredictions(trainingData);
+      setTimeout(() => {
+        hiddenLayerSize += 1;
+        train(trainingData);
+      }, 100);
       break;
     }
-    // fs.writeFileSync(
-    //   process.cwd() +
-    //     '/networks/network' +
-    //     '-is-' +
-    //     inputSize +
-    //     '-hn-' +
-    //     hiddenNeurons +
-    //     '-market-' +
-    //     market +
-    //     '.json',
-    //   JSON.stringify(myNetwork.toJSON(), null, 2)
-    // );
-    testPredictions(trainingData, hiddenNeurons);
+
+    testPredictions(trainingData);
   }
 }
 
-async function testPredictions(testDataSet, hiddenNeurons) {
-  // const url =
-  //   getHost() +
-  //   '/network/network-is-' +
-  //   inputSize +
-  //   '-hn-' +
-  //   hiddenNeurons +
-  //   '-market-' +
-  //   market +
-  //   '.json';
-  // const networkJson = (await axios.get(url)).data;
-  // createPerceptronDataSet(inputSize, market, {}, networkJson).then((d) =>
-  //   logFunction({ d })
-  // );
-  // logFunction('aaa');
-  // return;
-  // const net = Network.fromJSON(
-  //   typeof networkJson === 'string' ? JSON.parse(networkJson) : networkJson
-  // );
-
+async function testPredictions(testDataSet) {
   const net = Network.fromJSON(networkJson);
 
   const testResult = testDataSet.reduce(
@@ -264,4 +222,22 @@ async function testPredictions(testDataSet, hiddenNeurons) {
   );
   testResult.balance += testResult.btc * testDataSet.at(-1).close * 0.998;
   logFunction({ testResult });
+}
+
+export function setInputLayerSize({ action, requestId, value }) {
+  inputSize = value;
+  postMessage({
+    action,
+    requestId,
+    value: { status: Statuses.OK },
+  });
+}
+
+export function setHiddenLayerSize({ action, requestId, value }) {
+  hiddenLayerSize = value;
+  postMessage({
+    action,
+    requestId,
+    value: { status: Statuses.OK },
+  });
 }
