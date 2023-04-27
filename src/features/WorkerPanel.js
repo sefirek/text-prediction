@@ -3,7 +3,6 @@ import Workers from '../Workers';
 import MarketDataList from './MarketDataList';
 import NetworkSelect from './NetworkSelect';
 import Switch from './Switch';
-3;
 
 export default function WorkerPanel({ id }) {
   const [inputSize, setInputSize] = useState(11);
