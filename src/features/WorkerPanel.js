@@ -3,12 +3,17 @@ import Workers from '../Workers';
 import MarketDataList from './MarketDataList';
 import NetworkSelect from './NetworkSelect';
 import Switch from './Switch';
+import { useSelector } from 'react-redux';
+import { selectors } from '../reducers/marketSlice';
 
 export default function WorkerPanel({ id }) {
   const [inputSize, setInputSize] = useState(11);
   const [hiddenNeurons, setHiddenNeurons] = useState(31);
   const [networkJson, setNetworkJson] = useState(null);
   const [selectNewNetwork, setSelectNewNetwork] = useState(false);
+  const [market, setMarket] = useState(null);
+  const [tickInterval, setTickInterval] = useState(null);
+  const marketDataSelector = useSelector(selectors.marketDataSelector);
 
   useEffect(() => {
     Workers.createWorker(id);
@@ -47,6 +52,22 @@ export default function WorkerPanel({ id }) {
   //     Workers.run(0);
   //   });
   // });
+
+  function runTest() {
+    const marketData = marketDataSelector.find((data) => {
+      return data.market === market && data.tickInterval === tickInterval;
+    });
+    if (!marketData) throw new Error('Nie znaleziono elementu');
+
+    Workers.createLstmDataSet(id, {
+      inputSize: networkJson.input, //pobrac z gotowej sieci
+      marketData: marketData.data.map(([time, open, high, low, close]) => ({
+        time,
+        close,
+      })),
+    });
+  }
+
   const inputNumberStyle = {
     width: '2rem',
   };
@@ -81,7 +102,15 @@ export default function WorkerPanel({ id }) {
         </div>
       </div>
       <span>Wybierz dane:</span>
-      <MarketDataList></MarketDataList>
+      <MarketDataList
+        selectMarket={({ market, tickInterval }) => {
+          setMarket(market);
+          setTickInterval(tickInterval);
+        }}
+      ></MarketDataList>
+      <button onClick={runTest} disabled={!market}>
+        Uruchom test
+      </button>
     </div>
   );
 }
