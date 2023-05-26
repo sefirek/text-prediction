@@ -23,7 +23,7 @@ function App() {
   const workerLogContainerRef = useRef();
 
   useEffect(() => {
-    setInterval(() => {
+    const interval = setInterval(() => {
       const actions = Workers.getLogs(0);
       // actions.length && console.log(actions.length);
       if (actions.length) {
@@ -35,6 +35,7 @@ function App() {
       // actions.length = 0;
     }, 100);
     // console.log('xxxxxxxxxxxxxxxxxxxx');
+    return () => clearInterval(interval);
   });
   const createWorker = () => {
     console.log(Workers.createWorker(0));

@@ -57,6 +57,11 @@ function Workers() {
       return this.sendRequest(workerId, {
         action: Actions.RUN,
         value: {},
+      }).then((data) => {
+        if (data.value.status === Statuses.OK) {
+          this.workers[workerId].state = 'stop';
+          return data;
+        }
       });
     }
   };
@@ -74,16 +79,15 @@ function Workers() {
       value: { status: Statuses.OK },
     });
   };
-  this.createLstmDataSet = (workerId, { inputSize, marketData } = {}) => {
+  this.createLstmDataSet = (workerId, { marketData } = {}) => {
     console.log(marketData);
     return this.sendRequest(workerId, {
       action: Actions.CREATE_LSTM_DATA_SET,
-      value: { inputSize, marketData },
+      value: { marketData },
     });
   };
   this.getLogs = (workerId) => {
     const logs = [...(this.workers[workerId]?.actions || [])];
-    // logs.length && (this.workers[workerId].actions.length = 0);
     return logs;
   };
   this.sendRequest = (workerId, { action, value }) => {

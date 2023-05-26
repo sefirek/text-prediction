@@ -35,6 +35,7 @@ export async function createLstmDataSet({ value, requestId }) {
       requestId,
     });
   } catch (e) {
+    logFunction('dupa1');
     postMessage({
       action: Actions.CREATE_LSTM_DATA_SET,
       value: { status: Statuses.ERROR, error: e },
@@ -76,7 +77,7 @@ export default function run({ action, requestId }) {
   //   15
   // );
   postMessage({ action, requestId, value: { status: Statuses.OK } });
-  testPredictions(dataSet, 15);
+  testPredictions(dataSet);
 }
 
 export function createNewLstmNetwork({ action, requestId, value }) {
@@ -188,7 +189,7 @@ async function testPredictions(testDataSet) {
       prev.indexes.push(maxOutId);
       if (maxOutId < 1 + 1 && id - prev.lastTradingId > 5) {
         if (!prev.buyState) {
-          prev.investment = 10;
+          prev.investment = Math.min(50, prev.balance) && prev.balance * 0.3;
           prev.balance -= prev.investment;
           prev.btc = (prev.investment / close) * 0.998;
           prev.buyState = true;
@@ -198,7 +199,7 @@ async function testPredictions(testDataSet) {
       } else if (
         maxOutId >= inputSize - 1 - 1 &&
         prev.btc !== 0 &&
-        id - prev.lastTradingId > 5
+        id - prev.lastTradingId > 24
       ) {
         if (prev.buyState) {
           prev.balance += prev.btc * close * 0.998;

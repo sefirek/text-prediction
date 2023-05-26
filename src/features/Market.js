@@ -63,7 +63,7 @@ export default function Market() {
             event.target.setSelectionRange(evSelectionStart, evSelectionStart);
           }, 1);
           setBgColor('white');
-          if (capitalizedValue.length >= 6) {
+          if (capitalizedValue.length >= 5) {
             checkMarket(capitalizedValue);
           }
         }}

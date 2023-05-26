@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import Workers from '../Workers';
+import { useEffect, useRef, useState } from 'react';
+import Workers, { getActionName } from '../Workers';
 import MarketDataList from './MarketDataList';
 import NetworkSelect from './NetworkSelect';
 import Switch from './Switch';
@@ -14,11 +14,29 @@ export default function WorkerPanel({ id }) {
   const [market, setMarket] = useState(null);
   const [tickInterval, setTickInterval] = useState(null);
   const marketDataSelector = useSelector(selectors.marketDataSelector);
+  const [log, setLog] = useState([]);
+  const workerLogContainerRef = useRef();
 
   useEffect(() => {
     Workers.createWorker(id);
     Workers.initializeWorker(id);
   }, [id]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const actions = Workers.getLogs(id);
+      // actions.length && console.log(actions.length);
+      if (actions.length) {
+        // console.log(actions);
+        setLog(actions);
+        return;
+      }
+
+      // actions.length = 0;
+    }, 100);
+    // console.log('xxxxxxxxxxxxxxxxxxxx');
+    return () => clearInterval(interval);
+  });
 
   useEffect(() => {
     if (!networkJson) return;
@@ -53,19 +71,35 @@ export default function WorkerPanel({ id }) {
   //   });
   // });
 
-  function runTest() {
+  function updateInputSize(event) {
+    const updatedInputSize = validateValue(event, inputSize);
+    if (updateInputSize === inputSize) return;
+    setInputSize(updatedInputSize);
+    Workers.setInputSize(id, updatedInputSize);
+  }
+
+  function updateHiddenNeuronSize(event) {
+    const updatedHiddenNeuronSize = validateValue(event, hiddenNeurons);
+    if (updateHiddenNeuronSize === hiddenNeurons) return;
+    setHiddenNeurons(updatedHiddenNeuronSize);
+    Workers.setHiddenSize(id, updatedHiddenNeuronSize);
+  }
+
+  async function runTest() {
     const marketData = marketDataSelector.find((data) => {
       return data.market === market && data.tickInterval === tickInterval;
     });
     if (!marketData) throw new Error('Nie znaleziono elementu');
 
-    Workers.createLstmDataSet(id, {
-      inputSize: networkJson.input, //pobrac z gotowej sieci
+    await Workers.loadLstmNetworkFromJson(id, networkJson);
+
+    await Workers.createLstmDataSet(id, {
       marketData: marketData.data.map(([time, open, high, low, close]) => ({
         time,
         close,
       })),
     });
+    Workers.run(id);
   }
 
   const inputNumberStyle = {
@@ -84,7 +118,7 @@ export default function WorkerPanel({ id }) {
           <span style={{ marginRight: '1rem' }}>Rozmiar wejścia</span>
           <input
             value={inputSize}
-            onChange={(event) => setInputSize(validateValue(event, inputSize))}
+            onChange={updateInputSize}
             disabled={!selectNewNetwork}
             style={inputNumberStyle}
           ></input>
@@ -93,9 +127,7 @@ export default function WorkerPanel({ id }) {
           <span style={{ marginRight: '1rem' }}>Rozmiar warstwy ukrytej</span>
           <input
             value={hiddenNeurons}
-            onChange={(event) =>
-              setHiddenNeurons(validateValue(event, hiddenNeurons))
-            }
+            onChange={updateHiddenNeuronSize}
             disabled={!selectNewNetwork}
             style={inputNumberStyle}
           ></input>
@@ -111,6 +143,13 @@ export default function WorkerPanel({ id }) {
       <button onClick={runTest} disabled={!market}>
         Uruchom test
       </button>
+      <div className='worker-log-container' ref={workerLogContainerRef}>
+        {log.map((worker, id) => (
+          <div key={id}>
+            {getActionName(worker.action)} {JSON.stringify(worker.value)}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
