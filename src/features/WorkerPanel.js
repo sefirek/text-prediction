@@ -99,7 +99,7 @@ export default function WorkerPanel({ id }) {
         close,
       })),
     });
-    Workers.run(id);
+    Workers.test(id);
   }
 
   const inputNumberStyle = {

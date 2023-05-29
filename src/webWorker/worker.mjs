@@ -4,6 +4,7 @@ import run, {
   loadLstmNetworkFromJson,
   setHiddenLayerSize,
   setInputLayerSize,
+  test,
 } from './MarketPricePredictionTest.mjs';
 import { Actions, Statuses } from '../Workers.js';
 import { setHost } from './config.mjs';
@@ -49,6 +50,11 @@ onmessage = function (event) {
       }
       case Actions.SET_HIDDEN_LAYER_SIZE: {
         setHiddenLayerSize(event.data);
+        break;
+      }
+      case Actions.TEST: {
+        logFunction('jest');
+        test(event.data);
         break;
       }
       default: {

@@ -23,6 +23,7 @@ function Workers() {
       requestId: 0,
       state: 'stop',
       isInit: false,
+      testResult: [],
     };
     this.workers[workerId] = workerState;
     worker.onmessage = ({ data }) => {
@@ -64,6 +65,16 @@ function Workers() {
         }
       });
     }
+  };
+  this.test = (workerId) => {
+    console.log('test');
+    return this.sendRequest(workerId, {
+      action: Actions.TEST,
+      value: {},
+    }).then((data) => {
+      this.workers[workerId].testResult = data.value.testResult;
+      console.log('xxx', data.value);
+    });
   };
   this.initializeWorker = (workerId) => {
     const worker = this.workers[workerId];
@@ -137,6 +148,7 @@ export const Actions = {
   LOAD_LSTM_NETWORK_FROM_JSON: 5,
   SET_INPUT_LAYER_SIZE: 6,
   SET_HIDDEN_LAYER_SIZE: 7,
+  TEST: 8,
 };
 
 export function getActionName(actionId) {

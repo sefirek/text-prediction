@@ -80,6 +80,15 @@ export default function run({ action, requestId }) {
   testPredictions(dataSet);
 }
 
+export function test({ action, requestId }) {
+  postMessage({
+    action,
+    requestId,
+    value: { status: Statuses.OK, testResult: testPredictions(dataSet) },
+  });
+  logFunction('testowo');
+}
+
 export function createNewLstmNetwork({ action, requestId, value }) {
   const network = new architect.LSTM(
     value?.inputSize || inputSize,
@@ -177,11 +186,11 @@ function train(trainingData) {
   }
 }
 
-async function testPredictions(testDataSet) {
+function testPredictions(testDataSet) {
   const net = Network.fromJSON(networkJson);
 
   const testResult = testDataSet.reduce(
-    (prev, { input, output, close }, id) => {
+    (prev, { time, input, output, close }, id) => {
       const out = net.activate(input);
       const maxOutId = out.reduce((p, c, id) => {
         return c > out[p] ? id : p;
@@ -195,6 +204,7 @@ async function testPredictions(testDataSet) {
           prev.buyState = true;
           prev.lastTradingId = id;
           logFunction('buy');
+          prev.traiding.push({ time, type: 'buy', close });
         }
       } else if (
         maxOutId >= inputSize - 1 - 1 &&
@@ -207,6 +217,7 @@ async function testPredictions(testDataSet) {
           prev.buyState = false;
           // prev.lastTradingId = id;
           logFunction('sell', prev.balance);
+          prev.traiding.push({ time, type: 'sell', close });
         }
       }
       try {
@@ -219,10 +230,18 @@ async function testPredictions(testDataSet) {
       if (id % 100 === 0) logFunction(id);
       return prev;
     },
-    { balance: 100, btc: 0, indexes: [], investment: 0, lastTradingId: 0 }
+    {
+      traiding: [],
+      balance: 100,
+      btc: 0,
+      indexes: [],
+      investment: 0,
+      lastTradingId: 0,
+    }
   );
   testResult.balance += testResult.btc * testDataSet.at(-1).close * 0.998;
   logFunction({ testResult });
+  return testResult;
 }
 
 export function setInputLayerSize({ action, requestId, value }) {
