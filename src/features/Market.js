@@ -68,7 +68,6 @@ export default function Market() {
           }
         }}
         onKeyDown={(key) => {
-          console.log({ key });
           if (key.code === 'Enter') {
             checkMarket();
           }
@@ -93,10 +92,6 @@ export default function Market() {
           </button>
         </>
       ) : null}
-
-      {/* <MarketDataList selectMarket={({market, tickInterval})=>{
-
-      }}></MarketDataList> */}
     </div>
   );
 }

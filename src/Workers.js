@@ -67,13 +67,11 @@ function Workers() {
     }
   };
   this.test = (workerId) => {
-    console.log('test');
     return this.sendRequest(workerId, {
       action: Actions.TEST,
       value: {},
     }).then((data) => {
       this.workers[workerId].testResult = data.value.testResult;
-      console.log('xxx', data.value);
     });
   };
   this.initializeWorker = (workerId) => {

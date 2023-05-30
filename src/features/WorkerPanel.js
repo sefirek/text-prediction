@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Workers, { getActionName } from '../Workers';
 import MarketDataList from './MarketDataList';
 import NetworkSelect from './NetworkSelect';
@@ -15,26 +15,15 @@ export default function WorkerPanel({ id }) {
   const [tickInterval, setTickInterval] = useState(null);
   const marketDataSelector = useSelector(selectors.marketDataSelector);
   const [log, setLog] = useState([]);
-  const workerLogContainerRef = useRef();
-
-  useEffect(() => {
-    Workers.createWorker(id);
-    Workers.initializeWorker(id);
-  }, [id]);
 
   useEffect(() => {
     const interval = setInterval(() => {
       const actions = Workers.getLogs(id);
-      // actions.length && console.log(actions.length);
-      if (actions.length) {
-        // console.log(actions);
+      if (actions.length !== log.length) {
         setLog(actions);
         return;
       }
-
-      // actions.length = 0;
     }, 100);
-    // console.log('xxxxxxxxxxxxxxxxxxxx');
     return () => clearInterval(interval);
   });
 
@@ -143,7 +132,7 @@ export default function WorkerPanel({ id }) {
       <button onClick={runTest} disabled={!market}>
         Uruchom test
       </button>
-      <div className='worker-log-container' ref={workerLogContainerRef}>
+      <div className='worker-log-container'>
         {log.map((worker, id) => (
           <div key={id}>
             {getActionName(worker.action)} {JSON.stringify(worker.value)}

@@ -69,7 +69,6 @@ export default function Chart({ data }) {
       new Date(time),
       Number.parseFloat(close),
     ]);
-    console.log('update data', chartData);
     if (!graph) {
       graph = new Dygraph(
         'graph',
@@ -98,8 +97,6 @@ export default function Chart({ data }) {
   }, [data]);
 
   useEffect(() => {
-    console.log('min / max');
-
     if (data.length === 0) {
       return;
     }

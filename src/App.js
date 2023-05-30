@@ -18,25 +18,9 @@ function App() {
   );
   const [chartData, setChartData] = useState([]);
   const [networkJson, setNetworkJson] = useState(null);
-  const [log, setLog] = useState([]);
+  const [workers, setWorkers] = useState([]);
   const imgLogoRef = useRef();
-  const workerLogContainerRef = useRef();
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const actions = Workers.getLogs(0);
-      // actions.length && console.log(actions.length);
-      if (actions.length) {
-        // console.log(actions);
-        setLog(actions);
-        return;
-      }
-
-      // actions.length = 0;
-    }, 100);
-    // console.log('xxxxxxxxxxxxxxxxxxxx');
-    return () => clearInterval(interval);
-  });
   const createWorker = () => {
     console.log(Workers.createWorker(0));
     Workers.initializeWorker(0).then((data) => {
@@ -52,7 +36,7 @@ function App() {
           close,
         })),
       }).then((data) => {
-        console.log('createLstmDataSet', data);
+        // console.log('createLstmDataSet', data);
         Workers.createNewLstmNetwork(0, {
           inputSize: 11,
           hiddenLayerSize: 31,
@@ -133,25 +117,18 @@ function App() {
           onClick={() => {
             const newId = Workers.getNextId();
             Workers.createWorker(newId);
-            Workers.initializeWorker(newId);
+            setWorkers([...Workers.workers]);
           }}
         >
           Dodaj worker
         </button>
-        {Workers.workers.map(({ id }) => (
+        {workers.map(({ id }) => (
           <WorkerPanel key={id} id={id}></WorkerPanel>
         ))}
         <button onClick={testWorker} hidden={!networkJson}>
           test worker
         </button>
       </header>
-      <div className='worker-log-container' ref={workerLogContainerRef}>
-        {log.map((worker, id) => (
-          <div key={id}>
-            {getActionName(worker.action)} {JSON.stringify(worker.value)}
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
