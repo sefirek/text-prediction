@@ -117,7 +117,7 @@ function App() {
           onClick={() => {
             const newId = Workers.getNextId();
             Workers.createWorker(newId);
-            setWorkers([...Workers.workers]);
+            setWorkers(Workers.workers.filter(worker=>!worker.isHidden));
           }}
         >
           Dodaj worker
