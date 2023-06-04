@@ -1,7 +1,7 @@
 import axios from 'axios';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { loadMarketData, selectors } from '../reducers/marketSlice.js';
+import { loadMarketData, getFavourites, selectors } from '../reducers/marketSlice.js';
 import { getHost } from '../webWorker/config.mjs';
 import Intervals from './Intervals.js';
 // import MarketDataList from './MarketDataList.js';
@@ -12,6 +12,24 @@ export default function Market() {
   const [marketTickInterval, setMarketTickInterval] = useState(Intervals[0]);
   const [bgColor, setBgColor] = useState('white');
   const marketDataSelector = useSelector(selectors.marketDataSelector);
+  const favouritesSelector = useSelector(selectors.favouritesSelector);
+
+  useEffect(()=>{
+    dispatch(getFavourites())
+  },[]);
+
+  useEffect(()=>{
+    if(favouritesSelector.length) {
+      favouritesSelector.forEach((market)=>{
+        if(!marketDataSelector.find((record=>record.market === market))) {
+          dispatch(
+            loadMarketData({ market, tickInterval: '1d' })
+          );
+        }
+      })
+    }
+  },[favouritesSelector])
+
 
   const dispatch = useDispatch();
 

@@ -8,19 +8,19 @@ const app = express();
 const port = 5000;
 
 app.use(cors());
-
+app.use(express.json());
 app.use(express.static(process.cwd() + '/src/webWorker'));
 app.use(express.static(process.cwd() + '/public'));
 app.use('/network', express.static(process.cwd() + '/networks'));
 app.get('/', (req, res) => {
-  res.send('Hello World!');
+  res.send('Hello World!!');
 });
 
-killProcessWithPort(port).then(() => {
+killProcessWithPort(port).then((res) => {
   app.listen(port, () => {
     console.log(`Example app listening on port ${port}`);
   });
-});
+}); 
 
 app.get('/marketData', (req, res) => {
   const market = req.params.market || req.query.market;
@@ -212,3 +212,34 @@ function fetchPartOfMarketData({ startTime, endTime, market, tickInterval }) {
     }, 10);
   });
 }
+
+const FAVOURITES_MARKETS_FILE_PATH = path.join(process.cwd(), 'data/favourites_markets.json');
+
+if(!fs.existsSync(FAVOURITES_MARKETS_FILE_PATH)){
+  fs.writeFileSync(FAVOURITES_MARKETS_FILE_PATH, JSON.stringify(['BTCUSDT'], null,2));
+}
+
+app.get('/favourite', (req, res)=>{
+  res.send(JSON.parse(fs.readFileSync(FAVOURITES_MARKETS_FILE_PATH, 'utf-8')));
+});
+
+app.post('/favourite', (req,res)=>{
+  const market = req.params.market || req.query.market || req.body?.market;
+  console.log({market})
+  if(!market) return res.sendStatus(400);
+  const markets = JSON.parse(fs.readFileSync(FAVOURITES_MARKETS_FILE_PATH, 'utf-8'));
+  if(!markets.includes(market)) {
+    markets.push(market);
+    fs.writeFileSync(FAVOURITES_MARKETS_FILE_PATH, JSON.stringify(markets, null,2));
+  }
+  res.send(JSON.parse(fs.readFileSync(FAVOURITES_MARKETS_FILE_PATH, 'utf-8')))
+})
+
+app.delete('/favourite', (req, res)=>{
+  const market = req.params.market || req.query.market || req.body?.market;
+  if(!market) return res.sendStatus(400);
+  const markets = JSON.parse(fs.readFileSync(FAVOURITES_MARKETS_FILE_PATH, 'utf-8'));
+  markets.splice(markets.indexOf(market),1);
+  fs.writeFileSync(FAVOURITES_MARKETS_FILE_PATH, JSON.stringify(markets, null,2));
+  res.send(markets);
+})

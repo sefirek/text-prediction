@@ -1,12 +1,12 @@
 import logo from './logo.svg';
 import './App.css';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { useEffect, useState, useRef } from 'react';
 import Workers, { getActionName } from './Workers';
 import NetworkSelect from './features/NetworkSelect';
 import Market from './features/Market';
 import MarketDataList from './features/MarketDataList';
-import { selectors } from './reducers/marketSlice';
+import { selectors, getFavourites } from './reducers/marketSlice';
 import Chart from './features/Chart';
 import WorkerPanel from './features/WorkerPanel';
 import './close-jsx-a11y-error';
@@ -16,6 +16,8 @@ function App() {
   const marketDownloadingStatusSelector = useSelector(
     selectors.marketDownloadingStatusSelector
   );
+
+
   const [chartData, setChartData] = useState([]);
   const [networkJson, setNetworkJson] = useState(null);
   const [workers, setWorkers] = useState([]);
@@ -109,6 +111,7 @@ function App() {
             console.log('select', data);
             setChartData(data);
           }}
+          interactive={true}
         ></MarketDataList>
         <NetworkSelect onSelect={setNetworkJson}></NetworkSelect>
         {/* <NetworkSize></NetworkSize> */}

@@ -1,8 +1,10 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import fetchMarketData from './fetchMarketData';
+import RESTFavourite from './RESTFavourite';
 
 const initialState = {
   markets: [],
+  favourites:[]
 };
 
 const loadMarketData = createAsyncThunk(
@@ -13,6 +15,28 @@ const loadMarketData = createAsyncThunk(
   }
 );
 
+const addFavourite = createAsyncThunk(
+  'market/addFavourite',
+  async ({ market }, thunkAPI) => {
+    return RESTFavourite.addFavourite(market);
+  }
+);
+
+const deleteFavourite = createAsyncThunk(
+  'market/deleteFavourite',
+  async ({ market }, thunkAPI) => {
+    return RESTFavourite.deleteFavourite(market);
+  }
+);
+
+const getFavourites = createAsyncThunk(
+  'market/getFavourites',
+  async ()=>{
+    const data = await RESTFavourite.getFavourites();
+    return data;
+  }
+)
+
 const marketSlice = createSlice({
   name: 'market',
   initialState,
@@ -21,7 +45,6 @@ const marketSlice = createSlice({
     builder
       .addCase(loadMarketData.pending, (state, action) => {
         const { market, tickInterval } = action.meta.arg;
-        console.log('pending', action);
         state.markets.push({
           market,
           tickInterval,
@@ -30,7 +53,6 @@ const marketSlice = createSlice({
         });
       })
       .addCase(loadMarketData.fulfilled, (state, action) => {
-        console.log('fulfilled', action);
         const { market, tickInterval } = action.meta.arg;
         Object.assign(
           state.markets.find(
@@ -39,12 +61,25 @@ const marketSlice = createSlice({
           ),
           { market, tickInterval, data: action.payload, state: 'fulfilled' }
         );
-      });
+      })
+      .addCase(getFavourites.fulfilled, (state, action)=>{
+        state.favourites = action.payload;
+      })
+      .addCase(addFavourite.fulfilled, (state, action)=>{
+        state.favourites = action.payload;
+      })
+      .addCase(deleteFavourite.fulfilled, (state, action)=>{
+        state.favourites = action.payload;
+      })
   },
 });
 
 function marketDataSelector(state) {
   return state.market.markets;
+}
+
+function favouritesSelector(state) {
+  return state.market.favourites;
 }
 
 function marketDownloadingStatusSelector(state) {
@@ -53,9 +88,10 @@ function marketDownloadingStatusSelector(state) {
     : 'fulfilled';
 }
 
-export { loadMarketData };
+export { loadMarketData, getFavourites, addFavourite, deleteFavourite };
 export const selectors = {
   marketDataSelector,
   marketDownloadingStatusSelector,
+  favouritesSelector
 };
 export default marketSlice.reducer;
