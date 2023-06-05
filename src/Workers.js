@@ -9,7 +9,7 @@ function Workers() {
     );
   };
 
-  this.createWorker = (workerId, isHidden=false) => {
+  this.createWorker = (workerId, isHidden = false) => {
     if (this.workers[workerId]) return false;
     const worker = new Worker('worker.bundle.js');
     const workerState = {
@@ -21,7 +21,7 @@ function Workers() {
       state: 'stop',
       isInit: false,
       testResult: [],
-      isHidden
+      isHidden,
     };
     this.workers[workerId] = workerState;
     worker.onmessage = ({ data }) => {
@@ -70,6 +70,7 @@ function Workers() {
       value: {},
     }).then((data) => {
       this.workers[workerId].testResult = data.value.testResult;
+      return data.value.testResult;
     });
   };
   this.initializeWorker = (workerId) => {
