@@ -134,6 +134,10 @@ function Workers() {
       value: hiddenSize,
     });
   };
+  this.terminateWorker = (workerId) => {
+    this.workers[workerId].worker.terminate();
+    this.workers.splice(this.workers.findIndex(({id})=>id === workerId), 1);
+  }
 }
 
 export const Actions = {
