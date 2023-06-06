@@ -53,22 +53,43 @@ function App() {
   const runComulativeTest = async () => {
     const favourites = await RESTFavourite.getFavourites();
     if (!Workers.workers.filter((worker) => worker.isHidden).length) {
-      favourites.forEach(async (market, id) => {
-        const newWorkerId = Workers.getNextId();
-        await Workers.createWorker(newWorkerId, true);
-        const marketData = marketDataSelector.find((data) => {
-          return data.market === market && data.tickInterval === '1d';
-        });
-        // console.log({ marketData });
-        await Workers.loadLstmNetworkFromJson(newWorkerId, networkJson);
-        await Workers.createLstmDataSet(newWorkerId, {
-          marketData: marketData.data.map(([time, open, high, low, close]) => ({
+      const promises = favourites.map((market, id) => {
+        return new Promise(async (resolve, reject)=>{
+          const newWorkerId = Workers.getNextId();
+          await Workers.createWorker(newWorkerId, true);
+          const marketData = marketDataSelector.find((data) => {
+            return data.market === market && data.tickInterval === '1d';
+          }).data.map(([time, open, high, low, close]) => ({
             time,
             close,
-          })),
-        });
-        Workers.test(newWorkerId).then(console.log);
+          }));
+          // console.log({ marketData });
+          await Workers.loadLstmNetworkFromJson(newWorkerId, networkJson);
+          await Workers.createLstmDataSet(newWorkerId, {
+            marketData,
+          });
+          const testResult = await Workers.test(newWorkerId);
+          resolve({market, testResult, marketData})
+          // Workers.terminateWorker(newWorkerId);
+        })
+
       });
+      const testResults = await Promise.all(promises);
+      const firstTime = findFistCommonTimeOfMarketDatas(testResults);
+      const date = new Date(firstTime);
+      const now = Date.now();
+      const chartDataTimeline = {};
+      let time = date.getTime();
+      do {
+        chartDataTimeline[time]= new Array(favourites.length).fill(null);
+        date.setDate(date.getDate() + 1);
+        time = date.getTime();
+      } while(time < now);
+      testResults[0].marketData.forEach(({time, close})=>{
+        if(!chartDataTimeline[time]) return;
+        chartDataTimeline[time][0] = close;
+      })
+      const chartData = Object.entries(chartDataTimeline).map(([time, value])=>[new Date(Number.parseInt(time, 10)), ...value]);
     }
   };
   return (
@@ -119,6 +140,10 @@ function App() {
       </header>
     </div>
   );
+}
+
+function findFistCommonTimeOfMarketDatas(testResults) {
+  return Math.max(...testResults.map(({marketData})=>marketData[0].time))
 }
 
 export default App;
