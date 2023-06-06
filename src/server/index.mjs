@@ -219,11 +219,11 @@ if(!fs.existsSync(FAVOURITES_MARKETS_FILE_PATH)){
   fs.writeFileSync(FAVOURITES_MARKETS_FILE_PATH, JSON.stringify(['BTCUSDT'], null,2));
 }
 
-app.get('/favourite', (req, res)=>{
+app.get('/favourites', (req, res)=>{
   res.send(JSON.parse(fs.readFileSync(FAVOURITES_MARKETS_FILE_PATH, 'utf-8')));
 });
 
-app.post('/favourite', (req,res)=>{
+app.post('/favourites', (req,res)=>{
   const market = req.params.market || req.query.market || req.body?.market;
   console.log({market})
   if(!market) return res.sendStatus(400);
@@ -235,7 +235,7 @@ app.post('/favourite', (req,res)=>{
   res.send(JSON.parse(fs.readFileSync(FAVOURITES_MARKETS_FILE_PATH, 'utf-8')))
 })
 
-app.delete('/favourite', (req, res)=>{
+app.delete('/favourites', (req, res)=>{
   const market = req.params.market || req.query.market || req.body?.market;
   if(!market) return res.sendStatus(400);
   const markets = JSON.parse(fs.readFileSync(FAVOURITES_MARKETS_FILE_PATH, 'utf-8'));
