@@ -20,7 +20,7 @@ killProcessWithPort(port).then((res) => {
   app.listen(port, () => {
     console.log(`Example app listening on port ${port}`);
   });
-}); 
+});
 
 app.get('/marketData', (req, res) => {
   const market = req.params.market || req.query.market;
@@ -126,24 +126,25 @@ async function fetchMarketData(market = 'BTCUSDT', tickInterval = '1h') {
   let endTime = await findOldestTimeOfMarketData(market);
   let startTime = endTime;
   const now = Date.now();
+  const fetchResponseSize = 500;
   do {
     startTime = endTime;
     const date = new Date(startTime);
     switch (tickInterval) {
       case '1h': {
-        date.setHours(date.getHours() + 1000);
+        date.setHours(date.getHours() + fetchResponseSize);
         break;
       }
       case '5m': {
-        date.setMinutes(date.getMinutes() + 5 * 1000);
+        date.setMinutes(date.getMinutes() + 5 * fetchResponseSize);
         break;
       }
       case '1d': {
-        date.setDate(date.getDate() + 1000);
+        date.setDate(date.getDate() + fetchResponseSize);
         break;
       }
       case '1w': {
-        date.setDate(date.getDate() + 7 * 1000);
+        date.setDate(date.getDate() + 7 * fetchResponseSize);
         break;
       }
       default:
@@ -213,33 +214,48 @@ function fetchPartOfMarketData({ startTime, endTime, market, tickInterval }) {
   });
 }
 
-const FAVOURITES_MARKETS_FILE_PATH = path.join(process.cwd(), 'data/favourites_markets.json');
+const FAVOURITES_MARKETS_FILE_PATH = path.join(
+  process.cwd(),
+  'data/favourites_markets.json'
+);
 
-if(!fs.existsSync(FAVOURITES_MARKETS_FILE_PATH)){
-  fs.writeFileSync(FAVOURITES_MARKETS_FILE_PATH, JSON.stringify(['BTCUSDT'], null,2));
+if (!fs.existsSync(FAVOURITES_MARKETS_FILE_PATH)) {
+  fs.writeFileSync(
+    FAVOURITES_MARKETS_FILE_PATH,
+    JSON.stringify(['BTCUSDT'], null, 2)
+  );
 }
 
-app.get('/favourites', (req, res)=>{
+app.get('/favourites', (req, res) => {
   res.send(JSON.parse(fs.readFileSync(FAVOURITES_MARKETS_FILE_PATH, 'utf-8')));
 });
 
-app.post('/favourites', (req,res)=>{
+app.post('/favourites', (req, res) => {
   const market = req.params.market || req.query.market || req.body?.market;
-  console.log({market})
-  if(!market) return res.sendStatus(400);
-  const markets = JSON.parse(fs.readFileSync(FAVOURITES_MARKETS_FILE_PATH, 'utf-8'));
-  if(!markets.includes(market)) {
+  if (!market) return res.sendStatus(400);
+  const markets = JSON.parse(
+    fs.readFileSync(FAVOURITES_MARKETS_FILE_PATH, 'utf-8')
+  );
+  if (!markets.includes(market)) {
     markets.push(market);
-    fs.writeFileSync(FAVOURITES_MARKETS_FILE_PATH, JSON.stringify(markets, null,2));
+    fs.writeFileSync(
+      FAVOURITES_MARKETS_FILE_PATH,
+      JSON.stringify(markets, null, 2)
+    );
   }
-  res.send(JSON.parse(fs.readFileSync(FAVOURITES_MARKETS_FILE_PATH, 'utf-8')))
-})
+  res.send(JSON.parse(fs.readFileSync(FAVOURITES_MARKETS_FILE_PATH, 'utf-8')));
+});
 
-app.delete('/favourites', (req, res)=>{
+app.delete('/favourites', (req, res) => {
   const market = req.params.market || req.query.market || req.body?.market;
-  if(!market) return res.sendStatus(400);
-  const markets = JSON.parse(fs.readFileSync(FAVOURITES_MARKETS_FILE_PATH, 'utf-8'));
-  markets.splice(markets.indexOf(market),1);
-  fs.writeFileSync(FAVOURITES_MARKETS_FILE_PATH, JSON.stringify(markets, null,2));
+  if (!market) return res.sendStatus(400);
+  const markets = JSON.parse(
+    fs.readFileSync(FAVOURITES_MARKETS_FILE_PATH, 'utf-8')
+  );
+  markets.splice(markets.indexOf(market), 1);
+  fs.writeFileSync(
+    FAVOURITES_MARKETS_FILE_PATH,
+    JSON.stringify(markets, null, 2)
+  );
   res.send(markets);
-})
+});

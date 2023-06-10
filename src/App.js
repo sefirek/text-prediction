@@ -3,15 +3,13 @@ import './App.css';
 import { useSelector } from 'react-redux';
 import { useState, useRef } from 'react';
 import Workers from './Workers';
-import NetworkSelect from './features/NetworkSelect';
 import Market from './features/Market';
 import MarketDataList from './features/MarketDataList';
 import { selectors } from './reducers/marketSlice';
 import Chart from './features/Chart';
 import WorkerPanel from './features/WorkerPanel';
 import './close-jsx-a11y-error';
-
-import RESTFavourite from './reducers/RESTFavourite';
+import CumulativeTestPanel from './features/CumulativeTestPanel';
 
 function App() {
   const marketDataSelector = useSelector(selectors.marketDataSelector);
@@ -20,7 +18,6 @@ function App() {
   );
 
   const [chartData, setChartData] = useState([]);
-  const [networkJson, setNetworkJson] = useState(null);
   const [workers, setWorkers] = useState([]);
   const imgLogoRef = useRef();
 
@@ -49,48 +46,6 @@ function App() {
         });
       });
     });
-  };
-  const runComulativeTest = async () => {
-    const favourites = await RESTFavourite.getFavourites();
-    if (!Workers.workers.filter((worker) => worker.isHidden).length) {
-      const promises = favourites.map((market, id) => {
-        return new Promise(async (resolve, reject)=>{
-          const newWorkerId = Workers.getNextId();
-          await Workers.createWorker(newWorkerId, true);
-          const marketData = marketDataSelector.find((data) => {
-            return data.market === market && data.tickInterval === '1d';
-          }).data.map(([time, open, high, low, close]) => ({
-            time,
-            close,
-          }));
-          // console.log({ marketData });
-          await Workers.loadLstmNetworkFromJson(newWorkerId, networkJson);
-          await Workers.createLstmDataSet(newWorkerId, {
-            marketData,
-          });
-          const testResult = await Workers.test(newWorkerId);
-          resolve({market, testResult, marketData})
-          // Workers.terminateWorker(newWorkerId);
-        })
-
-      });
-      const testResults = await Promise.all(promises);
-      const firstTime = findFistCommonTimeOfMarketDatas(testResults);
-      const date = new Date(firstTime);
-      const now = Date.now();
-      const chartDataTimeline = {};
-      let time = date.getTime();
-      do {
-        chartDataTimeline[time]= new Array(favourites.length).fill(null);
-        date.setDate(date.getDate() + 1);
-        time = date.getTime();
-      } while(time < now);
-      testResults[0].marketData.forEach(({time, close})=>{
-        if(!chartDataTimeline[time]) return;
-        chartDataTimeline[time][0] = close;
-      })
-      const chartData = Object.entries(chartDataTimeline).map(([time, value])=>[new Date(Number.parseInt(time, 10)), ...value]);
-    }
   };
   return (
     <div className='App'>
@@ -121,7 +76,7 @@ function App() {
           }}
           interactive={true}
         ></MarketDataList>
-        <NetworkSelect onSelect={setNetworkJson}></NetworkSelect>
+        <CumulativeTestPanel></CumulativeTestPanel>
         <button
           onClick={() => {
             const newId = Workers.getNextId();
@@ -134,16 +89,9 @@ function App() {
         {workers.map(({ id }) => (
           <WorkerPanel key={id} id={id}></WorkerPanel>
         ))}
-        <button onClick={runComulativeTest} hidden={!networkJson}>
-          Uruchom zbiorczy test
-        </button>
       </header>
     </div>
   );
-}
-
-function findFistCommonTimeOfMarketDatas(testResults) {
-  return Math.max(...testResults.map(({marketData})=>marketData[0].time))
 }
 
 export default App;
