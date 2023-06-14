@@ -107,7 +107,19 @@ export default function CumulativeTestPanel() {
       const chartData = Object.entries(chartDataTimeline).map(
         ([time, value]) => [new Date(Number.parseFloat(time)), ...value]
       );
-      console.log(testResults[0].testResult);
+      console.log('test', testResults[0].testResult);
+      const traidings = testResults.map(({ testResult }) =>
+        testResult.traiding.filter(({ time }) => time >= firstTime)
+      );
+      let sell = getNextSell(traidings[0]);
+      chartData.forEach(([time, ...array], id) => {
+        if (sell && time < sell.time) {
+          chartData[id][favourites.length + 1] = array[0];
+        } else {
+          sell = getNextSell(traidings[0]);
+        }
+      });
+      console.log({ traidings });
       setChartData(chartData);
     }
   };
@@ -125,4 +137,12 @@ export default function CumulativeTestPanel() {
 
 function findFistCommonTimeOfMarketDatas(testResults) {
   return Math.max(...testResults.map(({ marketData }) => marketData[0].time));
+}
+
+function getNextSell(traidingArray) {
+  let sell = null;
+  do {
+    sell = traidingArray.shift();
+  } while (sell?.type === 'buy');
+  return sell;
 }
