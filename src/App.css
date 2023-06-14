@@ -12,7 +12,7 @@
 
 *:disabled {
   background-color: rgb(40, 44, 52);
-  border:none;
+  border: none;
   color: white;
   font-size: 1rem;
 }
@@ -25,7 +25,7 @@ input:focus {
   outline: none;
 }
 
-body{
+body {
   background-color: #282c34;
   color: white;
 }
@@ -76,4 +76,18 @@ body{
   position: relative;
   overflow: auto;
   height: 300px;
+}
+
+.dygraph-legend {
+  position: absolute;
+  left: 100% !important;
+}
+
+.dygraph-legend > span {
+  white-space: nowrap;
+}
+
+.dygraph-legend > span:before {
+  display: block;
+  content: '';
 }

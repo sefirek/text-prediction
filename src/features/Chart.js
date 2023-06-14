@@ -80,6 +80,7 @@ export default function Chart({ data }) {
           labels: ['time', 'x'],
           digitsAfterDecimal: 6,
           zoomCallback: updateZoom,
+          legend: 'always',
         }
       );
       return;

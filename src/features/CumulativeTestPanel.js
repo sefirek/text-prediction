@@ -5,6 +5,7 @@ import NetworkSelect from './NetworkSelect';
 import { useEffect, useState } from 'react';
 import { selectors } from '../reducers/marketSlice';
 import Dygraph from 'dygraphs';
+import { HSLToRGB } from './Helpers';
 
 let graph = null;
 
@@ -22,15 +23,40 @@ export default function CumulativeTestPanel() {
           ...favourites.map((market) => `${market}-sell`),
         ];
         const chartDataExample = [labels.map(() => 0)];
+        const PAIR_LINE_SATURATION = 60;
+        const PAIR_LINE_LIGHTNESS = 50;
+        const favFactor = Math.floor(360 / favourites.length);
+
+        const series = {};
+        favourites.forEach((fav, index) => {
+          const hue = (index + 1) * favFactor;
+          series[`${fav}-buy`] = {
+            color: `rgb(${HSLToRGB(
+              hue,
+              PAIR_LINE_SATURATION,
+              PAIR_LINE_LIGHTNESS
+            ).join(',')})`,
+          };
+          series[`${fav}-sell`] = {
+            color: `rgb(${HSLToRGB(
+              hue + 180,
+              PAIR_LINE_SATURATION,
+              PAIR_LINE_LIGHTNESS
+            ).join(',')})`,
+          };
+        });
         graph = new Dygraph('cumulativeTestChart', chartDataExample, {
           labels,
           digitsAfterDecimal: 6,
+          legend: 'always',
+          series,
         });
       });
     }
 
     if (chartData.length > 0) {
       console.log(chartData);
+
       graph.updateOptions({
         file: chartData,
       });
@@ -111,14 +137,18 @@ export default function CumulativeTestPanel() {
       const traidings = testResults.map(({ testResult }) =>
         testResult.traiding.filter(({ time }) => time >= firstTime)
       );
-      let sell = getNextSell(traidings[0]);
-      chartData.forEach(([time, ...array], id) => {
-        if (sell && time < sell.time) {
-          chartData[id][favourites.length + 1] = array[0];
-        } else {
-          sell = getNextSell(traidings[0]);
-        }
+      traidings.forEach((traiding, traidingId) => {
+        let sell = getNextSell(traiding);
+        chartData.forEach(([time, ...array], id) => {
+          if (sell && time < sell.time) {
+            chartData[id][favourites.length + 1 + traidingId] =
+              array[traidingId];
+          } else {
+            sell = getNextSell(traiding);
+          }
+        });
       });
+
       console.log({ traidings });
       setChartData(chartData);
     }
