@@ -23,7 +23,7 @@ function Workers() {
       testResult: [],
       isHidden,
     };
-    this.workers[workerId] = workerState;
+    this.workers.push(workerState);
     worker.onmessage = ({ data }) => {
       const { action, requestId, value } = data;
       const { callbacks } = workerState;
@@ -50,15 +50,19 @@ function Workers() {
       .catch((data) => console.log('worker', workerId, 'error', data));
     return true;
   };
+  this.getWorker = (workerId) => {
+    return this.workers.find(({ id }) => id === workerId);
+  };
   this.run = (workerId) => {
-    if (this.workers[workerId].state === 'stop') {
-      this.workers[workerId].state = 'start';
+    const worker = this.getWorker(workerId);
+    if (worker.state === 'stop') {
+      worker.state = 'start';
       return this.sendRequest(workerId, {
         action: Actions.RUN,
         value: {},
       }).then((data) => {
         if (data.value.status === Statuses.OK) {
-          this.workers[workerId].state = 'stop';
+          worker.state = 'stop';
           return data;
         }
       });
@@ -69,12 +73,12 @@ function Workers() {
       action: Actions.TEST,
       value: {},
     }).then((data) => {
-      this.workers[workerId].testResult = data.value.testResult;
+      this.getWorker(workerId).testResult = data.value.testResult;
       return data.value.testResult;
     });
   };
   this.initializeWorker = (workerId) => {
-    const worker = this.workers[workerId];
+    const worker = this.getWorker(workerId);
     if (worker.isInit === false) {
       worker.isInit = true;
       return this.sendRequest(workerId, {
@@ -95,11 +99,11 @@ function Workers() {
     });
   };
   this.getLogs = (workerId) => {
-    const logs = [...(this.workers[workerId]?.actions || [])];
+    const logs = [...(this.getWorker(workerId)?.actions || [])];
     return logs;
   };
   this.sendRequest = (workerId, { action, value }) => {
-    const worker = this.workers[workerId];
+    const worker = this.getWorker(workerId);
     return new Promise((resolve, reject) => {
       worker.callbacks[worker.requestId] = { resolve, reject };
       worker.worker.postMessage({ action, value, requestId: worker.requestId });
@@ -135,9 +139,13 @@ function Workers() {
     });
   };
   this.terminateWorker = (workerId) => {
-    this.workers[workerId].worker.terminate();
-    this.workers.splice(this.workers.findIndex(({id})=>id === workerId), 1);
-  }
+    const worker = this.getWorker(workerId);
+    worker.worker.terminate();
+    this.workers.splice(
+      this.workers.findIndex((w) => w === worker),
+      1
+    );
+  };
 }
 
 export const Actions = {

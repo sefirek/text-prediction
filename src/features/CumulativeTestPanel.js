@@ -83,8 +83,8 @@ export default function CumulativeTestPanel() {
             marketData,
           });
           const testResult = await Workers.test(workerId);
+          Workers.terminateWorker(workerId);
           resolve({ market, testResult, marketData });
-          // Workers.terminateWorker(newWorkerId);
         });
       });
       const testResults = await Promise.all(promises);
