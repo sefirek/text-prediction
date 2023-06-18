@@ -91,6 +91,29 @@ export default function WorkerPanel({ id }) {
     Workers.test(id);
   }
 
+  async function runTraining() {
+    const marketData = marketDataSelector.find((data) => {
+      return data.market === market && data.tickInterval === tickInterval;
+    });
+    if (!marketData) throw new Error('Nie znaleziono elementu');
+
+    // await Workers.loadLstmNetworkFromJson(id, networkJson);
+
+    const networkJson = (await Workers.createNewLstmNetwork(id, {})).value
+      .network;
+    console.log({ networkJson });
+    await Workers.loadLstmNetworkFromJson(id, networkJson);
+    setInputSize(networkJson.input);
+    await Workers.setInputSize(id, networkJson.input);
+    await Workers.createLstmDataSet(id, {
+      marketData: marketData.data.map(([time, open, high, low, close]) => ({
+        time,
+        close,
+      })),
+    });
+    Workers.run(id).then(console.log);
+  }
+
   const inputNumberStyle = {
     width: '2rem',
   };
@@ -131,6 +154,9 @@ export default function WorkerPanel({ id }) {
       ></MarketDataList>
       <button onClick={runTest} disabled={!market}>
         Uruchom test
+      </button>
+      <button onClick={runTraining} disabled={!market}>
+        Uruchom trening
       </button>
       <div className='worker-log-container'>
         {log.map((worker, id) => (

@@ -8,8 +8,6 @@ import { Actions, Statuses } from '../Workers.js';
 import { getHost } from './config.mjs';
 const { architect, methods, Network } = Neataptic;
 
-console.log = globalThis.logFunction;
-
 let inputSize = 31;
 let hiddenLayerSize = 15;
 let outputSize = inputSize;
@@ -35,7 +33,6 @@ export async function createLstmDataSet({ value, requestId }) {
       requestId,
     });
   } catch (e) {
-    logFunction('dupa1');
     postMessage({
       action: Actions.CREATE_LSTM_DATA_SET,
       value: { status: Statuses.ERROR, error: e },
@@ -65,19 +62,25 @@ export default function run({ action, requestId }) {
   // fs.writeFileSync('dataset.json', JSON.stringify(trainingData));
   const TRAINING_DATASET_LENGTH = 100;
   const HALF_DATASET_SIZE = TRAINING_DATASET_LENGTH / 2;
-  const startIndex = dataSet.findIndex(
-    ({ input }, id) => id > HALF_DATASET_SIZE && input.slice(-2).includes(1)
-  );
-  logFunction({ startIndex });
-  // train(
-  //   trainingData.slice(
-  //     startIndex - HALF_DATASET_SIZE,
-  //     startIndex + HALF_DATASET_SIZE
-  //   ),
-  //   15
+  // const startIndex = dataSet.findIndex(
+  //   ({ input }, id) => id > HALF_DATASET_SIZE && input.slice(-2).includes(1)
   // );
-  postMessage({ action, requestId, value: { status: Statuses.OK } });
-  testPredictions(dataSet);
+  const startIndex =
+    Math.floor(Math.random() * (dataSet.length - TRAINING_DATASET_LENGTH)) +
+    HALF_DATASET_SIZE;
+  logFunction({ startIndex });
+  try {
+    train(
+      dataSet.slice(
+        startIndex - HALF_DATASET_SIZE,
+        startIndex + HALF_DATASET_SIZE
+      )
+    );
+    // postMessage({ action, requestId, value: { status: Statuses.OK } });
+    testPredictions(dataSet);
+  } catch (e) {
+    logFunction({ e: e.message });
+  }
 }
 
 export function test({ action, requestId }) {
@@ -126,7 +129,7 @@ export function loadLstmNetworkFromJson({ action, requestId, value }) {
 function train(trainingData) {
   Math.random.reset();
   logFunction('Number of hidden neurons', hiddenLayerSize);
-  const myNetwork = createNewLstmNetwork();
+  const myNetwork = Network.fromJSON(networkJson);
   let batchCount = TRAINING_LOOP_MAX_COUNTER / 2 + 1;
   for (
     let trainingLoopCounter = 0;
@@ -174,7 +177,7 @@ function train(trainingData) {
 
     if (trainingOptions.kill) {
       logFunction('Dlugie uczenie, kill');
-      testPredictions(trainingData);
+      testPredictions(trainingData, myNetwork.toJSON());
       setTimeout(() => {
         hiddenLayerSize += 1;
         train(trainingData);
