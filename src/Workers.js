@@ -22,6 +22,7 @@ function Workers() {
       isInit: false,
       testResult: [],
       isHidden,
+      trainingProgress: '',
     };
     this.workers.push(workerState);
     worker.onmessage = ({ data }) => {
@@ -38,6 +39,10 @@ function Workers() {
         return;
       }
       switch (action) {
+        case Actions.TRAINING_PROGRESS: {
+          workerState.trainingProgress = value;
+          break;
+        }
         case Actions.LOG: {
         }
         default: {
@@ -102,6 +107,9 @@ function Workers() {
     const logs = [...(this.getWorker(workerId)?.actions || [])];
     return logs;
   };
+  this.getTrainingProgress = (workerId) => {
+    return this.getWorker(workerId)?.trainingProgress;
+  };
   this.sendRequest = (workerId, { action, value }) => {
     const worker = this.getWorker(workerId);
     return new Promise((resolve, reject) => {
@@ -158,6 +166,7 @@ export const Actions = {
   SET_INPUT_LAYER_SIZE: 6,
   SET_HIDDEN_LAYER_SIZE: 7,
   TEST: 8,
+  TRAINING_PROGRESS: 9,
 };
 
 export function getActionName(actionId) {

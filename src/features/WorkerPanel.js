@@ -15,13 +15,17 @@ export default function WorkerPanel({ id }) {
   const [tickInterval, setTickInterval] = useState(null);
   const marketDataSelector = useSelector(selectors.marketDataSelector);
   const [log, setLog] = useState([]);
+  const [trainingProgress, setTrainingProgress] = useState('');
 
   useEffect(() => {
     const interval = setInterval(() => {
       const actions = Workers.getLogs(id);
       if (actions.length !== log.length) {
         setLog(actions);
-        return;
+      }
+      const trainProgress = Workers.getTrainingProgress(id);
+      if (trainProgress !== trainingProgress) {
+        setTrainingProgress(trainProgress);
       }
     }, 100);
     return () => clearInterval(interval);
@@ -63,8 +67,10 @@ export default function WorkerPanel({ id }) {
   function updateInputSize(event) {
     const updatedInputSize = validateValue(event, inputSize);
     if (updateInputSize === inputSize) return;
-    setInputSize(updatedInputSize);
-    Workers.setInputSize(id, updatedInputSize);
+
+    Workers.setInputSize(id, updatedInputSize).then(() =>
+      setInputSize(updatedInputSize)
+    );
   }
 
   function updateHiddenNeuronSize(event) {
@@ -158,6 +164,7 @@ export default function WorkerPanel({ id }) {
       <button onClick={runTraining} disabled={!market}>
         Uruchom trening
       </button>
+      <p>{trainingProgress}</p>
       <div className='worker-log-container'>
         {log.map((worker, id) => (
           <div key={id}>

@@ -136,7 +136,9 @@ function train(trainingData) {
     trainingLoopCounter < TRAINING_LOOP_MAX_COUNTER;
     trainingLoopCounter += 1
   ) {
-    logFunction(`${(trainingLoopCounter / TRAINING_LOOP_MAX_COUNTER) * 100}%`);
+    sendTrainingProgress(
+      `${(trainingLoopCounter / TRAINING_LOOP_MAX_COUNTER) * 100}%`
+    );
 
     batchCount -= trainingLoopCounter % 2;
     const trainingOptions = {
@@ -159,7 +161,7 @@ function train(trainingData) {
       const from = Math.floor((batchId * trainingData.length) / batchCount);
       const to = Math.floor(((batchId + 1) * trainingData.length) / batchCount);
       const dataSet = trainingData.slice(from, to);
-      logFunction(
+      sendTrainingProgress(
         `${(
           ((trainingLoopCounter + i / batchCount) / TRAINING_LOOP_MAX_COUNTER) *
           100
@@ -187,6 +189,14 @@ function train(trainingData) {
 
     testPredictions(trainingData);
   }
+}
+
+function sendTrainingProgress(progress) {
+  const action = Actions.TRAINING_PROGRESS;
+  postMessage({
+    action,
+    value: progress,
+  });
 }
 
 function testPredictions(testDataSet) {
