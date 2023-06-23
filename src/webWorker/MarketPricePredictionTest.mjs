@@ -127,7 +127,7 @@ export function loadLstmNetworkFromJson({ action, requestId, value }) {
 }
 
 function train(trainingData) {
-  Math.random.reset();
+  // Math.random.reset();
   logFunction('Number of hidden neurons', hiddenLayerSize);
   const myNetwork = Network.fromJSON(networkJson);
   let batchCount = TRAINING_LOOP_MAX_COUNTER / 2 + 1;
@@ -182,6 +182,11 @@ function train(trainingData) {
       testPredictions(trainingData, myNetwork.toJSON());
       setTimeout(() => {
         hiddenLayerSize += 1;
+        networkJson = new architect.LSTM(
+          inputSize,
+          hiddenLayerSize,
+          outputSize
+        ).toJSON();
         train(trainingData);
       }, 100);
       break;
