@@ -263,7 +263,7 @@ function testPredictions(testDataSet) {
 }
 
 export function setInputLayerSize({ action, requestId, value }) {
-  inputSize = value;
+  inputSize = Number.parseFloat(value, 10);
   postMessage({
     action,
     requestId,
@@ -272,7 +272,7 @@ export function setInputLayerSize({ action, requestId, value }) {
 }
 
 export function setHiddenLayerSize({ action, requestId, value }) {
-  hiddenLayerSize = value;
+  hiddenLayerSize = Number.parseInt(value, 10);
   postMessage({
     action,
     requestId,
